@@ -1,75 +1,45 @@
 "use strict";
 
 const express = require("express");
-const { NotFoundError } = require("./expressError");
 
-const db = require("./fakeDb");
+const { Item } = require("./models");
+
 const router = new express.Router();
 
 /** GET /items: get list of items */
 router.get("/", function (req, res) {
-	return res.json({ items: db.items });
+	return res.json({ items: Item.getAll() });
 });
 
 /** POST /items: add and item to the list */
 router.post("/", function (req, res) {
-	const name = req.body.name;
-	const price = req.body.price;
+	const item = new Item(req.body.name, req.body.price);
 
-	// db.items.push(req.body) // test this later
-	db.items.push({ name, price });
-
-	return res.status(201).json({ added: { name, price } });
+	return res.status(201).json({ added: item });
 });
 
 /** GET /items/[name]: get single requested item */
 router.get("/:name", function (req, res) {
 	const name = req.params.name;
 
-	// for (let item of db.items) {
-	// 	if (item.name === name) {
-	// 		return res.json(item);
-	// 	}
-	// }
+	const item = Item.getOne(name);
 
-	const item = db.items.filter((i) => i.name === name);
-	if (item[0]) {
-		return res.json(item[0]);
-	} else {
-		throw new NotFoundError("item not found");
-	}
-
-	// 	throw new NotFoundError("item not found");
+	return res.json(item);
 });
 
 /** PATCH /items/[name]: update item */
 router.patch("/:name", function (req, res) {
-	const name = req.params.name;
-	const newName = req.body.name;
-	const newPrice = req.body.price;
+	const item = Item.update(req.params.name, req.body);
 
-	for (let item of db.items) {
-		if (item.name === name) {
-			item.name = newName;
-			item.price = newPrice;
-			return res.json({ updated: item });
-		}
-	}
-
-	throw new NotFoundError("item not found");
+	return res.json({ updated: item });
 });
 
 /** DELETE /items/[name]: delete item, return {message: Deleted} */
 router.delete("/:name", function (req, res) {
 	const name = req.params.name;
-	for (let item of db.items) {
-		if (item.name === name) {
-			db.items = db.items.filter((i) => i.name !== name);
 
-			return res.json({ message: "Deleted" });
-		}
-	}
-	throw new NotFoundError("item not found");
+	Item.delete(name);
+	return res.json({ message: "Deleted" });
 });
 
 module.exports = router;
